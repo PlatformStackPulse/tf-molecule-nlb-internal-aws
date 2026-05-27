@@ -1,5 +1,5 @@
 module "nlb" {
-  source = "git::https://github.com/PlatformStackPulse/tf-atom-lb-aws.git?ref=v1.1.0"
+  source = "git::https://github.com/PlatformStackPulse/tf-atom-lb-aws.git?ref=v1.3.0"
 
   enabled   = module.this.enabled
   namespace = var.namespace
