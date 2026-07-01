@@ -1,3 +1,8 @@
+output "id" {
+  description = "Normalized tf-label ID used to name the NLB resources"
+  value       = module.this.id
+}
+
 output "nlb_arn" {
   description = "ARN of the NLB"
   value       = module.nlb.arn

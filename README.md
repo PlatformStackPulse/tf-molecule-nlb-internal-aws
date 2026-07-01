@@ -3,9 +3,38 @@
 [![CI](https://github.com/PlatformStackPulse/tf-molecule-nlb-internal-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/PlatformStackPulse/tf-molecule-nlb-internal-aws/actions/workflows/ci.yml)
 ![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blueviolet)
 
-## Purpose
+Terraform molecule that provisions an **internal (private) Network Load Balancer** with a TCP listener and target group, for fronting private services inside a VPC. It composes three PlatformStackPulse atoms (`tf-atom-lb-aws`, `tf-atom-lb-target-group-aws`, `tf-atom-lb-listener-aws`) and applies consistent `tf-label` naming and tagging.
 
-Terraform molecule: Internal NLB with TCP listener and target group for private services.
+## Features
+
+- Internal (non-internet-facing) Network Load Balancer across the supplied private subnets.
+- TCP target group with a TCP health check on the target port (`instance` or `ip` targets).
+- TCP listener wiring the NLB to the target group on a configurable listener port.
+- Consistent, normalized naming and tagging via the `tf-label` (`module.this`) convention.
+- Fully togglable — set `enabled = false` (or via `context`) to create no resources.
+
+## Usage
+
+```hcl
+module "nlb_internal" {
+  source = "git::https://github.com/PlatformStackPulse/tf-molecule-nlb-internal-aws.git?ref=v1.0.0"
+
+  namespace = "eg"
+  stage     = "prod"
+  name      = "api"
+
+  vpc_id     = "vpc-0123456789abcdef0"
+  subnet_ids = ["subnet-0aaaa1111bbbb2222", "subnet-0cccc3333dddd4444"]
+
+  listener_port = 443
+  target_port   = 8080
+  target_type   = "ip"
+
+  tags = {
+    Team = "platform"
+  }
+}
+```
 
 ## Module Documentation
 
@@ -65,8 +94,27 @@ No resources.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_id"></a> [id](#output\_id) | Normalized tf-label ID used to name the NLB resources |
 | <a name="output_nlb_arn"></a> [nlb\_arn](#output\_nlb\_arn) | ARN of the NLB |
 | <a name="output_nlb_dns_name"></a> [nlb\_dns\_name](#output\_nlb\_dns\_name) | DNS name of the NLB |
 | <a name="output_nlb_zone_id"></a> [nlb\_zone\_id](#output\_nlb\_zone\_id) | Route53 zone ID of the NLB |
 | <a name="output_target_group_arn"></a> [target\_group\_arn](#output\_target\_group\_arn) | ARN of the target group |
 <!-- END_TF_DOCS -->
+
+## Tests
+
+Unit tests live in `tests/unit/` and run against a **mock AWS provider** (no real
+AWS calls, no credentials required). They assert on plan-known values only — the
+`tf-label` ID and child-module enablement — and verify that disabling the module
+(`enabled = false`) yields null outputs.
+
+```bash
+terraform init -backend=false
+terraform test -test-directory=tests/unit          # or: make test-unit
+```
+
+Integration tests (if present) run against real AWS and require credentials:
+
+```bash
+terraform test -test-directory=tests/integration    # or: make test-integration
+```
